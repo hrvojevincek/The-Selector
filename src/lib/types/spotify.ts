@@ -39,7 +39,7 @@ export type SpotifyPlaylist = {
 	id: string;
 	name: string;
 	images?: { url: string }[];
-	tracks: { total: number };
+	tracks?: { total?: number };
 };
 
 export type SpotifyUser = {

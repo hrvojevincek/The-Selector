@@ -38,6 +38,6 @@ Do not guess endpoint paths or JSON field names — use the OpenAPI spec.
 
 ## Redirect URI
 
-- Local dev: `http://localhost:5173/auth/callback` (configured in README; register in Spotify Dashboard)
+- Local dev: `http://127.0.0.1:5173/auth/callback` — must match `SPOTIFY_REDIRECT_URI` and Spotify Dashboard exactly
 - Production: HTTPS callback on your Vercel domain
-- Spotify allows `http://127.0.0.1` for local dev per their redirect URI guide; this project uses `localhost` — keep Dashboard URIs in sync with `SPOTIFY_REDIRECT_URI`.
+- In dev, `localhost` requests redirect to `127.0.0.1` so OAuth state cookies match the Spotify callback host

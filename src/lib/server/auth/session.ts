@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Cookies } from "@sveltejs/kit";
 import { EncryptJWT, jwtDecrypt } from "jose";
 import type { Session } from "$lib/types/spotify";
@@ -7,7 +8,7 @@ const COOKIE_NAME = "session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 function getKey() {
-	return new TextEncoder().encode(getSessionSecret());
+	return createHash("sha256").update(getSessionSecret()).digest();
 }
 
 export async function encryptSession(session: Session): Promise<string> {
