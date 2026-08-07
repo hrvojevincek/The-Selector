@@ -35,11 +35,18 @@ export type SpotifyArtist = {
 	images?: { url: string; height: number; width: number }[];
 };
 
+export type SpotifyPlaylistRef = {
+	total?: number;
+};
+
 export type SpotifyPlaylist = {
 	id: string;
 	name: string;
 	images?: { url: string }[];
-	tracks?: { total?: number };
+	/** Feb 2026+ — replaces deprecated `tracks` ref on SimplifiedPlaylistObject. */
+	items?: SpotifyPlaylistRef;
+	/** @deprecated Use `items` instead (Spotify Feb 2026 API). */
+	tracks?: SpotifyPlaylistRef;
 };
 
 export type SpotifyUser = {
