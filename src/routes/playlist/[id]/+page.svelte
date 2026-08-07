@@ -24,6 +24,7 @@ let progressCurrent = $state(0);
 let progressTotal = $state(0);
 
 function toggleArtist(id: string) {
+	if (loading) return;
 	const next = new Set(selectedIds);
 	if (next.has(id)) next.delete(id);
 	else next.add(id);
@@ -77,7 +78,7 @@ async function findMixes() {
 }
 </script>
 
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+<div class="mx-auto max-w-7xl px-4 py-8 pb-24 sm:px-6 lg:pb-8">
 	<Button variant="ghost" size="sm" href="/dashboard" class="mb-6 -ml-2">
 		<ArrowLeftIcon class="size-4" />
 		Back to dashboard

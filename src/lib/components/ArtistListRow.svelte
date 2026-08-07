@@ -18,6 +18,7 @@ let {
 
 <button
 	type="button"
+	aria-pressed={selected}
 	class={cn(
 		'group flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-accent/50',
 		selected && 'border-primary bg-accent/30 ring-1 ring-primary'
