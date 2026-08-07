@@ -20,7 +20,7 @@ A personal full-stack web app built with **SvelteKit**, **TypeScript**, and **Ta
 
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and create an app.
 2. Add a **Redirect URI**:
-   - Local: `http://localhost:5173/auth/callback`
+   - Local: `http://127.0.0.1:5173/auth/callback` ([Spotify loopback docs](https://developer.spotify.com/documentation/web-api/tutorials/code-flow))
    - Production: `https://your-domain.vercel.app/auth/callback`
 3. Copy the **Client ID** and **Client Secret**.
 
@@ -46,7 +46,7 @@ cp .env.example .env
 | `SPOTIFY_CLIENT_ID`     | Yes      | Spotify app client ID                                                  |
 | `SPOTIFY_CLIENT_SECRET` | Yes      | Spotify app client secret                                              |
 | `SPOTIFY_REDIRECT_URI`  | Yes      | OAuth callback URL                                                     |
-| `SESSION_SECRET`        | Yes      | 32+ char secret for encrypted session cookies (`openssl rand -hex 32`) |
+| `SESSION_SECRET`        | Yes      | Strong random secret for session cookies (`openssl rand -hex 32`) |
 | `YOUTUBE_API_KEY`       | No       | Reserved for future YouTube mix search                                 |
 | `REDIS_URL`             | No       | Reserved for Upstash/Vercel KV cache swap                              |
 
@@ -59,7 +59,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) and click **Log in with Spotify**.
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173) and click **Log in with Spotify**. (`localhost` redirects to `127.0.0.1` in dev so OAuth cookies match.)
 
 ## Deploy to Vercel
 

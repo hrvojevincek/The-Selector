@@ -22,6 +22,6 @@ export async function getUserPlaylists(
 		id: playlist.id,
 		name: playlist.name,
 		imageUrl: playlist.images?.[0]?.url ?? null,
-		trackCount: playlist.tracks.total,
+		trackCount: playlist.tracks?.total ?? 0,
 	}));
 }
