@@ -8,12 +8,17 @@ import {
 	CardContent,
 	CardFooter,
 } from "$lib/components/ui/card/index.js";
-import type { MixSearchResult } from "$lib/types/mixcloud";
+import type { MixPlatform, MixSearchResult } from "$lib/types/mix";
 import MixEmbed from "./MixEmbed.svelte";
 
 let { mix }: { mix: MixSearchResult } = $props();
 
 let showEmbed = $state(false);
+
+const platformLabel: Record<MixPlatform, string> = {
+	mixcloud: "Mixcloud",
+	youtube: "YouTube",
+};
 
 function formatDuration(seconds: number): string {
 	if (!seconds) return "";
@@ -47,6 +52,7 @@ function formatPlays(count: number): string {
 		<div class="min-w-0 flex-1">
 			<h3 class="line-clamp-2 font-medium leading-snug">{mix.title}</h3>
 			<div class="mt-2 flex flex-wrap items-center gap-2">
+				<Badge variant="outline">{platformLabel[mix.platform]}</Badge>
 				{#if mix.duration}
 					<Badge variant="outline">{formatDuration(mix.duration)}</Badge>
 				{/if}
@@ -69,7 +75,7 @@ function formatPlays(count: number): string {
 					rel="noreferrer"
 				>
 					<ExternalLinkIcon class="size-3.5" />
-					Open on Mixcloud
+					Open on {platformLabel[mix.platform]}
 				</Button>
 			</div>
 		</div>
@@ -77,7 +83,11 @@ function formatPlays(count: number): string {
 
 	{#if showEmbed}
 		<CardFooter class="border-t pt-4 pb-4">
-			<MixEmbed embedUrl={mix.embedUrl} title={mix.title} />
+			<MixEmbed
+				embedUrl={mix.embedUrl}
+				title={mix.title}
+				platform={mix.platform}
+			/>
 		</CardFooter>
 	{/if}
 </Card>

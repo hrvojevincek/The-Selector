@@ -130,7 +130,7 @@ const totalMixes = $derived(
 				{#if mixes.length === 0}
 					<Card>
 						<CardContent class="py-6 text-sm text-muted-foreground">
-							No mixes found for this artist on Mixcloud.
+							No mixes found for this artist on Mixcloud or YouTube.
 						</CardContent>
 					</Card>
 				{:else}

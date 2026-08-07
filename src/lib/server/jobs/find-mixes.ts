@@ -1,11 +1,14 @@
 import type { FindMixesInput, FindMixesOutput } from "$lib/types/jobs";
-import type { MixSearchResult } from "$lib/types/mixcloud";
+import type { MixSearchResult } from "$lib/types/mix";
 import { getCache } from "../cache";
-import { findMixesForArtist, normalizeArtistName } from "../mixcloud/client";
+import { findMixesForArtist as findMixcloudMixes } from "../mixcloud/client";
+import { normalizeArtistName, rankAndLimit } from "../mixes/rank";
 import { searchDjMixes } from "../youtube/client";
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24;
-const DEFAULT_MAX_RESULTS = 5;
+const DEFAULT_MAX_RESULTS = 10;
+/** Candidates fetched per platform before global ranking. */
+const PER_PLATFORM_FETCH = 8;
 /** Max parallel artist lookups per request. */
 const CONCURRENCY = 3;
 
@@ -32,11 +35,8 @@ async function mapWithConcurrency<T, R>(
 }
 
 /**
- * Finds DJ mixes for each artist via Mixcloud (and YouTube when wired).
+ * Finds DJ mixes for each artist via Mixcloud and YouTube.
  * Results are keyed by Spotify artist ID and cached for 24h per normalized name.
- *
- * @see {@link findMixesForArtist} for ranking logic
- * @see {@link searchDjMixes} for optional YouTube results
  */
 export async function findMixesJob(
 	input: FindMixesInput,
@@ -49,7 +49,7 @@ export async function findMixesJob(
 	let fetched = 0;
 
 	await mapWithConcurrency(input.artists, CONCURRENCY, async (artist) => {
-		const cacheKey = `mixcloud:artist:${normalizeArtistName(artist.name)}`;
+		const cacheKey = `mixes:artist:${normalizeArtistName(artist.name)}`;
 		const cachedResult = await cache.get<MixSearchResult[]>(cacheKey);
 
 		if (cachedResult) {
@@ -58,9 +58,16 @@ export async function findMixesJob(
 			return;
 		}
 
-		const mixcloudResults = await findMixesForArtist(artist.name, maxResults);
-		const youtubeResults = await searchDjMixes(artist.name);
-		const combined = [...mixcloudResults, ...youtubeResults];
+		const [mixcloudResults, youtubeResults] = await Promise.all([
+			findMixcloudMixes(artist.name, PER_PLATFORM_FETCH),
+			searchDjMixes(artist.name, PER_PLATFORM_FETCH),
+		]);
+
+		const combined = rankAndLimit(
+			artist.name,
+			[...mixcloudResults, ...youtubeResults],
+			maxResults,
+		);
 
 		await cache.set(cacheKey, combined, CACHE_TTL_SECONDS);
 		results[artist.spotifyId] = combined;

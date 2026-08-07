@@ -1,14 +1,4 @@
-export type MixSearchResult = {
-	title: string;
-	url: string;
-	key: string;
-	duration: number;
-	playCount: number;
-	thumbnail: string | null;
-	embedUrl: string;
-	/** `search` = Mixcloud search hit; `user` = from matched artist profile. */
-	source: "search" | "user";
-};
+export type { MixPlatform, MixSearchResult, MixSource } from "./mix";
 
 export type MixcloudCloudcast = {
 	key: string;

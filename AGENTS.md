@@ -159,19 +159,57 @@ See [`.cursor/rules/spotify.mdc`](.cursor/rules/spotify.mdc).
 
 ---
 
+## Mix platform APIs (Mixcloud, YouTube)
+
+This app searches for DJ mixes server-side in `src/lib/server/mixcloud/` and `src/lib/server/youtube/`, orchestrated by `findMixesJob()` in `src/lib/server/jobs/find-mixes.ts`.
+
+> **SoundCloud** is not integrated — API access requires an [Artist Pro subscription](https://developers.soundcloud.com/docs/api). Docs kept for future reference: https://developers.soundcloud.com/docs/api
+
+### Official human docs (prefer in order)
+
+| Platform | Primary guide | Notes |
+| --- | --- | --- |
+| **Mixcloud** | https://www.mixcloud.com/developers/ | Public read API — no key for search; OAuth only for writes |
+| **YouTube** | https://developers.google.com/youtube/v3/guides/implementation | Data API v3 — search + videos endpoints; see [Search requests](https://developers.google.com/youtube/v3/guides/implementation/search) |
+
+Do not guess endpoint paths or JSON field names — use the official docs above.
+
+### Context7 MCP (optional fallback)
+
+Use Context7 when you need fetched doc snippets:
+
+1. **`resolve-library-id`** — query: `YouTube Data API`, etc.
+2. **`get-library-docs`** — use the resolved library ID; optional `topic` (e.g. `search`, `authentication`)
+
+There is no single official `llms.txt` for these platforms — prefer the human docs linked above.
+
+### This repo’s mix-platform usage
+
+- **Job**: `findMixesJob()` — parallel Mixcloud + YouTube search per artist, merge, rank, cache 24h
+- **Mixcloud**: `src/lib/server/mixcloud/client.ts` — `/search/?type=cloudcast|user`, user profile cloudcasts; public `https://api.mixcloud.com/`
+- **YouTube**: `src/lib/server/youtube/client.ts` — `search.list` + `videos.list`; requires `YOUTUBE_API_KEY`
+- **Shared**: `src/lib/server/mixes/rank.ts`, `src/lib/types/mix.ts` — unified `MixSearchResult` with `platform`
+- **Embeds**: Mixcloud widget, YouTube iframe — no raw audio streams (Mixcloud policy)
+- **Env vars**: `YOUTUBE_API_KEY` — optional; YouTube skipped when unset. Never `VITE_*`
+
+See [`.cursor/rules/mix-platforms.mdc`](.cursor/rules/mix-platforms.mdc).
+
+---
+
 ## Cursor rules (project conventions)
 
 - [`.cursor/rules/sveltekit.mdc`](.cursor/rules/sveltekit.mdc) — SvelteKit patterns (`*.svelte`, `*.svelte.ts`)
 - [`.cursor/rules/typescript.mdc`](.cursor/rules/typescript.mdc) — TypeScript patterns (`src/**/*.ts`)
 - [`.cursor/rules/shadcn-svelte.mdc`](.cursor/rules/shadcn-svelte.mdc) — shadcn-svelte UI patterns
 - [`.cursor/rules/spotify.mdc`](.cursor/rules/spotify.mdc) — Spotify Web API & OAuth patterns
+- [`.cursor/rules/mix-platforms.mdc`](.cursor/rules/mix-platforms.mdc) — Mixcloud + YouTube mix search
 
 ---
 
 ## This app’s architecture
 
 - **Stack**: SvelteKit 2, Svelte 5, TypeScript (strict), Tailwind 4, **shadcn-svelte**, Vercel adapter
-- **Server modules**: `src/lib/server/` (auth, spotify, mixcloud, cache, jobs)
+- **Server modules**: `src/lib/server/` (auth, spotify, mixcloud, youtube, cache, jobs)
 - **Shared types**: `src/lib/types/`
 - **Routes**: `/`, `/dashboard`, `/portfolio`, `/auth/*`, `/api/find-mixes`
 - **Client state**: `src/lib/stores/search.svelte.ts` (portfolio results, no DB in v1)

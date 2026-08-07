@@ -1,9 +1,10 @@
+import type { MixSearchResult } from "$lib/types/mix";
 import type {
 	MixcloudCloudcast,
 	MixcloudSearchResponse,
 	MixcloudUser,
-	MixSearchResult,
 } from "$lib/types/mixcloud";
+import { normalizeArtistName, rankAndLimit } from "../mixes/rank";
 
 const BASE_URL = "https://api.mixcloud.com";
 
@@ -20,9 +21,7 @@ async function mixcloudFetch<T>(path: string): Promise<T> {
 	return response.json() as Promise<T>;
 }
 
-export function normalizeArtistName(name: string): string {
-	return name.toLowerCase().trim().replace(/\s+/g, " ");
-}
+export { normalizeArtistName } from "../mixes/rank";
 
 export function toEmbedUrl(mixUrl: string): string {
 	return `https://www.mixcloud.com/widget/iframe/?hide_cover=1&light=1&feed=${encodeURIComponent(mixUrl)}`;
@@ -35,7 +34,8 @@ export function mapCloudcastToResult(
 	return {
 		title: cloudcast.name,
 		url: cloudcast.url,
-		key: cloudcast.key,
+		key: `mixcloud:${cloudcast.key}`,
+		platform: "mixcloud",
 		duration: cloudcast.audio_length ?? 0,
 		playCount: cloudcast.play_count ?? 0,
 		thumbnail:
@@ -48,39 +48,7 @@ export function mapCloudcastToResult(
 	};
 }
 
-/** Dedupe by mix key, rank by title match score, then play count. */
-export function rankAndLimit(
-	artistName: string,
-	mixes: MixSearchResult[],
-	maxResults: number,
-): MixSearchResult[] {
-	const deduped = new Map<string, MixSearchResult>();
-	for (const mix of mixes) {
-		deduped.set(mix.key, mix);
-	}
-
-	const normalized = normalizeArtistName(artistName);
-
-	return [...deduped.values()]
-		.sort((a, b) => {
-			const scoreA = mixMatchScore(normalized, a);
-			const scoreB = mixMatchScore(normalized, b);
-			if (scoreB !== scoreA) return scoreB - scoreA;
-			return b.playCount - a.playCount;
-		})
-		.slice(0, maxResults);
-}
-
-/** Title relevance: +10 if full artist name in title, +2 per word (length > 2). */
-function mixMatchScore(normalizedArtist: string, mix: MixSearchResult): number {
-	const haystack = mix.title.toLowerCase();
-	let score = 0;
-	if (haystack.includes(normalizedArtist)) score += 10;
-	for (const word of normalizedArtist.split(" ")) {
-		if (word.length > 2 && haystack.includes(word)) score += 2;
-	}
-	return score;
-}
+export { rankAndLimit };
 
 export async function searchCloudcasts(
 	query: string,
