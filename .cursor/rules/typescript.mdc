@@ -1,0 +1,53 @@
+---
+description: TypeScript patterns and doc sources for this project
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# TypeScript conventions (this repo)
+
+## Documentation sources (prefer in order)
+
+1. **Context7 MCP** — in `.cursor/mcp.json`. For TypeScript language questions:
+   - `resolve-library-id` with query like "TypeScript handbook"
+   - `get-library-docs` with `/microsoft/typescript` (optionally `topic`: generics, modules, tsconfig, etc.)
+2. **Official handbook** — https://www.typescriptlang.org/docs/handbook/intro
+3. **TSConfig reference** — https://www.typescriptlang.org/tsconfig/
+4. **Context7 llms bundle** — https://context7.com/microsoft/TypeScript/llms.txt
+
+There is no official `typescriptlang.org/llms.txt`; use Context7 or the handbook.
+
+## Validate changes
+
+Run `pnpm check` after non-trivial TypeScript edits (uses `svelte-check` + strict `tsconfig.json`).
+
+## Project config
+
+- **Strict mode** enabled (`strict: true`)
+- **Module resolution**: `bundler` (SvelteKit/Vite)
+- **Node types**: `@types/node` for server code (`src/lib/server/**`)
+- **Path aliases**: `$lib`, `$app/*` from SvelteKit generated tsconfig
+
+## Patterns for this codebase
+
+```ts
+// Prefer explicit types on public/server boundaries
+export type FindMixesInput = { artists: { spotifyId: string; name: string }[] };
+
+// SvelteKit server loads — import generated types
+import type { PageServerLoad } from './$types';
+import type { RequestHandler } from './$types';
+
+// App locals — extend in src/app.d.ts, use event.locals.session
+```
+
+- Use `import type { ... }` for type-only imports
+- Avoid `any`; prefer `unknown` + narrowing for external JSON
+- Server secrets via `$env/dynamic/private`, not `process.env` in client code
+- Shared types live in `src/lib/types/`; server logic in `src/lib/server/`
+
+## Common pitfalls
+
+- Don't use browser APIs in `+page.server.ts`, `+server.ts`, or `src/lib/server/**`
+- `$lib/server/**` must not be imported from client components (SvelteKit enforces server-only)
+- When Spotify/Mixcloud JSON is untyped, define minimal interfaces in `src/lib/types/`

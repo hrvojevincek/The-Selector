@@ -1,0 +1,37 @@
+---
+description: shadcn-svelte component patterns for this project
+globs: src/**/*.{svelte,ts}
+alwaysApply: false
+---
+
+# shadcn-svelte conventions
+
+## Documentation sources
+
+1. **Context7 MCP** — `get-library-docs` with `/websites/shadcn-svelte`
+2. **Official docs** — https://www.shadcn-svelte.com/docs
+3. **Official llms.txt** — https://www.shadcn-svelte.com/llms.txt
+4. **Add components** — `npx shadcn-svelte@latest add <name> -y`
+
+## This project
+
+- **Config**: [components.json](components.json) — vega style, neutral base, dark mode default
+- **UI path**: `$lib/components/ui/<component>/index.js`
+- **Utils**: `cn()` from `$lib/utils.js`
+- **Icons**: `@lucide/svelte/icons/*`
+- **Theme**: Spotify-inspired green `--primary` in `.dark` ([src/routes/layout.css](src/routes/layout.css))
+
+## Usage rules
+
+- Prefer shadcn components (`Button`, `Card`, `Badge`, `Alert`, `Checkbox`, `Progress`, `Avatar`, `ScrollArea`) over raw styled HTML
+- Import from `$lib/components/ui/.../index.js` (include `.js` extension)
+- Extend shadcn source files in `src/lib/components/ui/` when needed — they are owned by the project
+- Use semantic tokens: `bg-background`, `text-muted-foreground`, `border-border`, `text-primary` — not custom `--color-*` vars
+
+## Adding new UI
+
+```bash
+npx shadcn-svelte@latest add dialog tabs -y
+```
+
+Run `pnpm check` after adding or editing components.

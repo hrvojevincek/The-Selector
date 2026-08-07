@@ -1,0 +1,44 @@
+---
+description: SvelteKit + Svelte 5 patterns for this project; use official MCP docs when unsure
+globs: src/**/*.{svelte,svelte.ts}
+alwaysApply: false
+---
+
+# SvelteKit conventions (this repo)
+
+## Documentation sources (prefer in order)
+
+1. **Svelte MCP** — configured in `.cursor/mcp.json` (`@sveltejs/mcp`). Use `list-sections` then `get-documentation` for SvelteKit topics.
+2. **Official llms.txt** — https://svelte.dev/docs/kit/llms.txt (SvelteKit only) or https://svelte.dev/llms-medium.txt (Svelte + Kit, abridged).
+3. **Human docs** — https://svelte.dev/docs/kit
+
+See `AGENTS.md` for MCP tool usage rules.
+
+## Project-specific rules
+
+- **Secrets stay server-side**: Spotify/Mixcloud/YouTube only in `src/lib/server/**` or `+server.ts` / `+page.server.ts`. Never `VITE_` prefix for secrets.
+- **Auth**: session in encrypted httpOnly cookie; read via `event.locals.session` in loads/endpoints.
+- **Routes**: `+page.server.ts` for data loading; `+server.ts` for API endpoints; protect with `hooks.server.ts`.
+- **Svelte 5**: use runes (`$props`, `$state`, `$derived`, `$effect`). Stores in `.svelte.ts` files for shared client state.
+- **UI**: use shadcn-svelte from `$lib/components/ui/`; semantic tokens only — no custom CSS utility classes for layout/color
+- **Adapter**: Vercel via `vite.config.ts` — no separate `svelte.config.js`.
+
+## Common patterns
+
+```ts
+// +page.server.ts load
+export const load: PageServerLoad = async ({ locals }) => {
+  if (!locals.session) throw redirect(302, "/");
+  // ...
+};
+```
+
+```ts
+// +server.ts endpoint
+export const POST: RequestHandler = async ({ request, locals }) => {
+  if (!locals.session) return json({ error: "Unauthorized" }, { status: 401 });
+  // ...
+};
+```
+
+Before finishing `.svelte` edits, run **svelte-autofixer** via the Svelte MCP when available.
