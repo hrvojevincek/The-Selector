@@ -1,0 +1,43 @@
+---
+description: Spotify Web API and OAuth patterns for this project; use official docs when unsure
+globs: src/lib/server/spotify/**, src/lib/server/auth/**, src/routes/auth/**
+alwaysApply: false
+---
+
+# Spotify Web API conventions (this repo)
+
+## Documentation sources (prefer in order)
+
+1. **Official llms.txt** — https://developer.spotify.com/llms.txt
+2. **OpenAPI spec** — https://developer.spotify.com/reference/web-api/open-api-schema.yaml
+3. **Building with AI** — https://developer.spotify.com/documentation/web-api/tutorials/building-with-ai
+4. **Context7 MCP** — `get-library-docs` with `/websites/developer_spotify_web-api` (see `AGENTS.md`)
+
+Do not guess endpoint paths or JSON field names — use the OpenAPI spec.
+
+## Project-specific rules
+
+- **Server-only**: Spotify client ID/secret, tokens, and `spotifyFetch()` stay in `src/lib/server/**` or `+server.ts`. Never expose secrets or access tokens to the browser.
+- **OAuth flow**: Authorization Code (backend) in `src/lib/server/auth/spotify-oauth.ts` — not PKCE, not Client Credentials for user data, not Implicit Grant (deprecated).
+- **Scopes**: request only what the app needs (`playlist-read-private`, `playlist-read-collaborative`, `user-top-read`, `user-follow-read`). Add new scopes in `spotify-oauth.ts` and README together.
+- **Tokens**: store in encrypted session cookie via `jose`; refresh with `refreshAccessToken()` before expiry (`ensureFreshSession()` in `client.ts`).
+- **API client**: use `spotifyFetch(session, path)` — paths are relative to `https://api.spotify.com/v1`.
+- **Types**: minimal interfaces in `src/lib/types/spotify.ts`; align shapes with OpenAPI schemas.
+- **Rate limits**: on HTTP 429, respect `Retry-After`; use exponential backoff — do not tight-loop retries.
+- **Compliance**: follow [Developer Terms](https://developer.spotify.com/terms); cache only what immediate use requires.
+
+## Modules
+
+| Module | Role |
+| --- | --- |
+| `src/lib/server/auth/spotify-oauth.ts` | Authorize URL, code exchange, token refresh |
+| `src/lib/server/auth/session.ts` | Encrypted session cookie |
+| `src/lib/server/spotify/client.ts` | `spotifyFetch`, `ensureFreshSession`, `/me` |
+| `src/lib/server/spotify/playlists.ts` | User playlists |
+| `src/lib/server/spotify/artists.ts` | Top/followed/playlist artists |
+
+## Redirect URI
+
+- Local dev: `http://localhost:5173/auth/callback` (configured in README; register in Spotify Dashboard)
+- Production: HTTPS callback on your Vercel domain
+- Spotify allows `http://127.0.0.1` for local dev per their redirect URI guide; this project uses `localhost` — keep Dashboard URIs in sync with `SPOTIFY_REDIRECT_URI`.

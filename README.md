@@ -104,15 +104,19 @@ pnpm preview     # Preview production build
 pnpm check       # TypeScript + Svelte checks
 pnpm lint        # Biome lint + format check
 pnpm lint:fix    # Auto-fix lint/format issues
+pnpm validate    # check + lint + unit tests (same as pre-push hook)
+pnpm validate:full  # validate + production build
+pnpm test        # Vitest unit tests
+pnpm test:e2e    # Playwright (builds + preview server)
 ```
 
 ## AI / agent documentation
 
-This project includes agent tooling for **SvelteKit**, **TypeScript**, and **shadcn-svelte**:
+This project includes agent tooling for **SvelteKit**, **TypeScript**, **shadcn-svelte**, and **Spotify Web API**:
 
 - **[AGENTS.md](AGENTS.md)** — MCP workflows, doc URLs, validation commands
 - **[`.cursor/mcp.json`](.cursor/mcp.json)** — `@sveltejs/mcp` + `@upstash/context7-mcp`
-- **[`.cursor/rules/`](.cursor/rules/)** — sveltekit, typescript, shadcn-svelte conventions
+- **[`.cursor/rules/`](.cursor/rules/)** — sveltekit, typescript, shadcn-svelte, spotify conventions
 - **[components.json](components.json)** — shadcn-svelte config (vega style, neutral)
 
 | Topic | Best source |
@@ -120,6 +124,7 @@ This project includes agent tooling for **SvelteKit**, **TypeScript**, and **sha
 | SvelteKit | Svelte MCP or https://svelte.dev/docs/llms |
 | TypeScript | Context7 MCP (`/microsoft/typescript`) |
 | shadcn-svelte | Context7 MCP (`/websites/shadcn-svelte`) or https://www.shadcn-svelte.com/docs |
+| Spotify Web API | https://developer.spotify.com/llms.txt + [OpenAPI spec](https://developer.spotify.com/reference/web-api/open-api-schema.yaml); Context7 (`/websites/developer_spotify_web-api`) |
 
 ### UI (shadcn-svelte)
 
@@ -127,3 +132,25 @@ This project includes agent tooling for **SvelteKit**, **TypeScript**, and **sha
 pnpm dlx shadcn-svelte add <component> -y   # add new components
 pnpm check                                  # validate after UI changes
 ```
+
+## Git hooks (Husky)
+
+| Hook | Runs | Purpose |
+| --- | --- | --- |
+| **pre-commit** | `lint-staged` → Biome on staged files | Fast auto-fix + lint before commit |
+| **pre-push** | `pnpm validate` (`check` + `lint` + `test`) | Typecheck, lint, and unit tests before sharing |
+
+Playwright e2e runs in **GitHub Actions on pull requests** only (slower; needs a browser). Use `pnpm validate:full` locally before releases.
+
+## CI (GitHub Actions)
+
+On every push to `main` and on all PRs:
+
+| Step | Command |
+| --- | --- |
+| Biome | `pnpm lint` |
+| svelte-check | `pnpm check` |
+| Vitest | `pnpm test` |
+| Build | `pnpm build` |
+
+On **pull requests only**, a second job runs Playwright against the production preview server.
