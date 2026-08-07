@@ -26,6 +26,12 @@ type PlaylistItemsResponse = {
 	next: string | null;
 };
 
+const SPOTIFY_ID_RE = /^[A-Za-z0-9]{22}$/;
+
+function isValidSpotifyId(id: string | undefined): id is string {
+	return typeof id === "string" && SPOTIFY_ID_RE.test(id);
+}
+
 function artistImage(artist: SpotifyArtist): string | null {
 	return artist.images?.[0]?.url ?? null;
 }
@@ -76,19 +82,31 @@ export async function getFollowedArtists(
 	return response.artists.items;
 }
 
+/** Image URLs keyed by artist id — from endpoints that return full artist objects. */
+export function buildArtistImageLookup(
+	artists: SpotifyArtist[],
+): Map<string, string | null> {
+	const lookup = new Map<string, string | null>();
+	for (const artist of artists) {
+		if (!lookup.has(artist.id)) {
+			lookup.set(artist.id, artistImage(artist));
+		}
+	}
+	return lookup;
+}
+
 export async function getPlaylistArtists(
 	session: Session,
 	playlistIds: string[],
 	maxPlaylists = 5,
 	maxTracksPerPlaylist = 100,
 ): Promise<SpotifyArtist[]> {
-	const artists: SpotifyArtist[] = [];
-	const seen = new Set<string>();
+	const artistsById = new Map<string, string>();
 	const playlists = playlistIds.slice(0, maxPlaylists);
 
 	for (const playlistId of playlists) {
 		let path: string | null =
-			`/playlists/${playlistId}/items?limit=50&fields=items(item(artists(id,name,images))),next`;
+			`/playlists/${playlistId}/items?limit=50&fields=items(item(artists(id,name))),next`;
 		let trackCount = 0;
 
 		while (path && trackCount < maxTracksPerPlaylist) {
@@ -97,9 +115,9 @@ export async function getPlaylistArtists(
 			for (const item of response.items) {
 				if (!item.item?.artists) continue;
 				for (const artist of item.item.artists) {
-					if (!seen.has(artist.id)) {
-						seen.add(artist.id);
-						artists.push(artist);
+					if (!isValidSpotifyId(artist.id)) continue;
+					if (!artistsById.has(artist.id)) {
+						artistsById.set(artist.id, artist.name);
 					}
 				}
 				trackCount++;
@@ -110,7 +128,9 @@ export async function getPlaylistArtists(
 		}
 	}
 
-	return artists;
+	return [...artistsById.entries()]
+		.map(([id, name]) => ({ id, name }))
+		.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

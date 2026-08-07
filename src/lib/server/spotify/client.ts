@@ -27,10 +27,16 @@ export async function ensureFreshSession(
 	return refreshed;
 }
 
+/** Pause between Spotify requests when retrying after rate limits. */
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function spotifyFetch<T>(
 	session: Session,
 	path: string,
 	init?: RequestInit,
+	attempt = 0,
 ): Promise<T> {
 	const url = path.startsWith("https://")
 		? path
@@ -42,6 +48,12 @@ export async function spotifyFetch<T>(
 			...(init?.headers ?? {}),
 		},
 	});
+
+	if (response.status === 429 && attempt < 3) {
+		const retryAfterSec = Number(response.headers.get("Retry-After") ?? 1);
+		await sleep(Math.max(retryAfterSec, 1) * 1000);
+		return spotifyFetch<T>(session, path, init, attempt + 1);
+	}
 
 	if (!response.ok) {
 		const text = await response.text();
