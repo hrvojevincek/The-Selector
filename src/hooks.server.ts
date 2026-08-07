@@ -4,7 +4,7 @@ import { dev } from "$app/environment";
 import { getSession } from "$lib/server/auth/session";
 import { ensureFreshSession } from "$lib/server/spotify/client";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/portfolio"];
+const PROTECTED_PREFIXES = ["/dashboard", "/portfolio", "/playlist"];
 
 /** Spotify local redirect uses 127.0.0.1; cookies are host-scoped — not localhost. */
 const loopbackRedirect: Handle = async ({ event, resolve }) => {

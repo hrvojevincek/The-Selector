@@ -10,6 +10,15 @@ type PlaylistsResponse = {
 	next: string | null;
 };
 
+function toPlaylistSummary(playlist: SpotifyPlaylist): PlaylistSummary {
+	return {
+		id: playlist.id,
+		name: playlist.name,
+		imageUrl: playlist.images?.[0]?.url ?? null,
+		trackCount: playlist.items?.total ?? playlist.tracks?.total ?? 0,
+	};
+}
+
 export async function getUserPlaylists(
 	session: Session,
 ): Promise<PlaylistSummary[]> {
@@ -18,10 +27,16 @@ export async function getUserPlaylists(
 		"/me/playlists?limit=50",
 	);
 
-	return response.items.map((playlist) => ({
-		id: playlist.id,
-		name: playlist.name,
-		imageUrl: playlist.images?.[0]?.url ?? null,
-		trackCount: playlist.items?.total ?? playlist.tracks?.total ?? 0,
-	}));
+	return response.items.map(toPlaylistSummary);
+}
+
+export async function getPlaylist(
+	session: Session,
+	playlistId: string,
+): Promise<PlaylistSummary> {
+	const playlist = await spotifyFetch<SpotifyPlaylist>(
+		session,
+		`/playlists/${playlistId}?fields=id,name,images,items(total),tracks(total)`,
+	);
+	return toPlaylistSummary(playlist);
 }
