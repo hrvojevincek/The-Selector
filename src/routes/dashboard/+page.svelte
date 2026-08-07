@@ -21,11 +21,6 @@ import type { PageProps } from "./$types";
 let { data }: PageProps = $props();
 
 let selectedIds = $state<Set<string>>(new Set());
-
-// Default to all artists selected whenever the load data changes.
-$effect(() => {
-	selectedIds = new Set(data.artists.map((a) => a.id));
-});
 let loading = $state(false);
 let errorMessage = $state<string | null>(null);
 let progressCurrent = $state(0);
@@ -99,11 +94,11 @@ async function findMixes() {
 	</div>
 
 	<div class="grid gap-8 lg:grid-cols-[280px_1fr]">
-		<Card class="h-fit py-0">
-			<CardHeader class="pb-4">
+		<Card class="h-fit">
+			<CardHeader>
 				<CardTitle class="text-base">Library</CardTitle>
 			</CardHeader>
-			<CardContent class="space-y-6 pb-6">
+			<CardContent class="space-y-6">
 				<PlaylistList playlists={data.playlists} />
 
 				<Separator />
@@ -111,10 +106,11 @@ async function findMixes() {
 				<div class="flex items-start gap-3 rounded-lg border p-3">
 					<Checkbox
 						id="scan-playlists"
+						class="mt-0.5"
 						checked={data.scanPlaylists}
 						onCheckedChange={togglePlaylistScan}
 					/>
-					<div class="grid gap-1.5 leading-none">
+					<div class="space-y-1 leading-none">
 						<Label for="scan-playlists" class="font-medium"
 							>Include artists from playlists</Label
 						>

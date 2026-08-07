@@ -17,9 +17,9 @@ type FollowedArtistsResponse = {
 	};
 };
 
-type PlaylistTracksResponse = {
+type PlaylistItemsResponse = {
 	items: {
-		track: {
+		item: {
 			artists?: SpotifyArtist[];
 		} | null;
 	}[];
@@ -88,18 +88,15 @@ export async function getPlaylistArtists(
 
 	for (const playlistId of playlists) {
 		let path: string | null =
-			`/playlists/${playlistId}/tracks?limit=50&fields=items(track(artists(id,name,images))),next`;
+			`/playlists/${playlistId}/items?limit=50&fields=items(item(artists(id,name,images))),next`;
 		let trackCount = 0;
 
 		while (path && trackCount < maxTracksPerPlaylist) {
-			const response: PlaylistTracksResponse = await spotifyFetch(
-				session,
-				path,
-			);
+			const response: PlaylistItemsResponse = await spotifyFetch(session, path);
 
 			for (const item of response.items) {
-				if (!item.track?.artists) continue;
-				for (const artist of item.track.artists) {
+				if (!item.item?.artists) continue;
+				for (const artist of item.item.artists) {
 					if (!seen.has(artist.id)) {
 						seen.add(artist.id);
 						artists.push(artist);

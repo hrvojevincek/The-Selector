@@ -7,16 +7,14 @@ let { playlists }: { playlists: PlaylistSummary[] } = $props();
 </script>
 
 <div class="space-y-3">
-	<h2
-		class="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground"
-	>
+	<h2 class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
 		Your playlists
 	</h2>
-	<ScrollArea class="h-[420px] pr-3">
-		<ul class="space-y-1">
+	<ScrollArea class="h-[420px]">
+		<ul class="space-y-1 pr-3">
 			{#each playlists as playlist (playlist.id)}
 				<li
-					class="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent/50"
+					class="flex items-center gap-3 rounded-lg py-2 transition-colors hover:bg-accent/50"
 				>
 					<div class="size-10 shrink-0 overflow-hidden rounded-md bg-muted">
 						{#if playlist.imageUrl}
