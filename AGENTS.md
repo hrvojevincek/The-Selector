@@ -1,4 +1,4 @@
-# Agent guide — SvelteKit & TypeScript documentation
+# Agent guide — SvelteKit, TypeScript & Spotify documentation
 
 This project uses official/community AI tooling for accurate docs. Reload MCP in Cursor after config changes.
 
@@ -113,11 +113,58 @@ See [`.cursor/rules/shadcn-svelte.mdc`](.cursor/rules/shadcn-svelte.mdc).
 
 ---
 
+## Spotify Web API
+
+This app uses the [Spotify Web API](https://developer.spotify.com/documentation/web-api) for OAuth and user library data. All Spotify calls run server-side in `src/lib/server/spotify/` and `src/lib/server/auth/`.
+
+### Official machine-readable docs (prefer in order)
+
+1. **Official llms.txt** — https://developer.spotify.com/llms.txt (entry point for AI tools)
+2. **OpenAPI 3.0 spec** — https://developer.spotify.com/reference/web-api/open-api-schema.yaml (endpoints, schemas, auth — do not guess field names)
+3. **Building with AI** — https://developer.spotify.com/documentation/web-api/tutorials/building-with-ai (OAuth, scopes, rate limits, review checklist)
+
+### Context7 MCP (optional fallback)
+
+Also in [`.cursor/mcp.json`](.cursor/mcp.json). Use when you need fetched doc snippets:
+
+1. **`resolve-library-id`** — query: `Spotify Web API`
+2. **`get-library-docs`** — library ID: **`/websites/developer_spotify_web-api`**
+   - Alternate: **`/websites/developer_spotify`** (broader portal docs)
+   - Optional `topic`: e.g. `authorization`, `scopes`, `playlists`, `artists`
+
+Context7 llms bundle: https://context7.com/websites/developer_spotify_web-api/llms.txt
+
+### Official human docs (this app)
+
+| Topic | URL |
+| --- | --- |
+| Developer portal | https://developer.spotify.com/ |
+| Dashboard (app credentials) | https://developer.spotify.com/dashboard |
+| Authorization Code flow | https://developer.spotify.com/documentation/web-api/tutorials/code-flow |
+| Refreshing tokens | https://developer.spotify.com/documentation/web-api/tutorials/refreshing-tokens |
+| Scopes | https://developer.spotify.com/documentation/web-api/concepts/scopes |
+| Redirect URIs | https://developer.spotify.com/documentation/web-api/concepts/redirect_uri |
+| Rate limits | https://developer.spotify.com/documentation/web-api/concepts/rate-limits |
+| Developer Terms | https://developer.spotify.com/terms |
+
+### This repo’s Spotify usage
+
+- **OAuth**: Authorization Code flow (secure backend) in `src/lib/server/auth/spotify-oauth.ts` — not PKCE (backend holds client secret)
+- **Scopes**: `playlist-read-private`, `playlist-read-collaborative`, `user-top-read`, `user-follow-read` (see README)
+- **Session**: encrypted httpOnly cookie; token refresh in `ensureFreshSession()` + `hooks.server.ts`
+- **Endpoints used**: `/me`, `/me/playlists`, `/me/top/artists`, `/me/following?type=artist`, `/playlists/{id}/tracks`
+- **Env vars**: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` — never `VITE_*`
+
+See [`.cursor/rules/spotify.mdc`](.cursor/rules/spotify.mdc).
+
+---
+
 ## Cursor rules (project conventions)
 
 - [`.cursor/rules/sveltekit.mdc`](.cursor/rules/sveltekit.mdc) — SvelteKit patterns (`*.svelte`, `*.svelte.ts`)
 - [`.cursor/rules/typescript.mdc`](.cursor/rules/typescript.mdc) — TypeScript patterns (`src/**/*.ts`)
 - [`.cursor/rules/shadcn-svelte.mdc`](.cursor/rules/shadcn-svelte.mdc) — shadcn-svelte UI patterns
+- [`.cursor/rules/spotify.mdc`](.cursor/rules/spotify.mdc) — Spotify Web API & OAuth patterns
 
 ---
 
