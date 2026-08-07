@@ -47,7 +47,7 @@ cp .env.example .env
 | `SPOTIFY_CLIENT_SECRET` | Yes      | Spotify app client secret                                              |
 | `SPOTIFY_REDIRECT_URI`  | Yes      | OAuth callback URL                                                     |
 | `SESSION_SECRET`        | Yes      | Strong random secret for session cookies (`openssl rand -hex 32`) |
-| `YOUTUBE_API_KEY`       | No       | Reserved for future YouTube mix search                                 |
+| `YOUTUBE_API_KEY`       | No       | YouTube Data API v3 mix search — [implementation guide](https://developers.google.com/youtube/v3/guides/implementation) |
 | `REDIS_URL`             | No       | Reserved for Upstash/Vercel KV cache swap                              |
 
 **Important:** Never prefix secrets with `VITE_`. All API calls run on the server.
@@ -73,12 +73,13 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173) and click **Log in with Spot
 ## Architecture
 
 ```
-Browser → SvelteKit routes → Server services → Spotify / Mixcloud APIs
+Browser → SvelteKit routes → Server services → Spotify / Mixcloud / YouTube APIs
 ```
 
 - **Auth**: Encrypted httpOnly session cookie (`jose`), token refresh in `hooks.server.ts`
 - **Spotify**: `src/lib/server/spotify/` — playlists, artists, authenticated fetch
-- **Mixcloud**: `src/lib/server/mixcloud/` — search cloudcasts + user profiles
+- **Mixcloud**: `src/lib/server/mixcloud/` — search cloudcasts + user profiles ([docs](https://www.mixcloud.com/developers/))
+- **YouTube**: `src/lib/server/youtube/` — long-form DJ mix search ([docs](https://developers.google.com/youtube/v3/guides/implementation))
 - **Cache**: `CacheProvider` interface; in-memory default, Redis stub for later
 - **Jobs**: `findMixesJob()` in `src/lib/server/jobs/find-mixes.ts` — sync in v1, Inngest-ready shape
 
@@ -112,11 +113,11 @@ pnpm test:e2e    # Playwright (builds + preview server)
 
 ## AI / agent documentation
 
-This project includes agent tooling for **SvelteKit**, **TypeScript**, **shadcn-svelte**, and **Spotify Web API**:
+This project includes agent tooling for **SvelteKit**, **TypeScript**, **shadcn-svelte**, **Spotify Web API**, and **mix platform APIs**:
 
 - **[AGENTS.md](AGENTS.md)** — MCP workflows, doc URLs, validation commands
 - **[`.cursor/mcp.json`](.cursor/mcp.json)** — `@sveltejs/mcp` + `@upstash/context7-mcp`
-- **[`.cursor/rules/`](.cursor/rules/)** — sveltekit, typescript, shadcn-svelte, spotify conventions
+- **[`.cursor/rules/`](.cursor/rules/)** — sveltekit, typescript, shadcn-svelte, spotify, mix-platforms conventions
 - **[components.json](components.json)** — shadcn-svelte config (vega style, neutral)
 
 | Topic | Best source |
@@ -125,6 +126,8 @@ This project includes agent tooling for **SvelteKit**, **TypeScript**, **shadcn-
 | TypeScript | Context7 MCP (`/microsoft/typescript`) |
 | shadcn-svelte | Context7 MCP (`/websites/shadcn-svelte`) or https://www.shadcn-svelte.com/docs |
 | Spotify Web API | https://developer.spotify.com/llms.txt + [OpenAPI spec](https://developer.spotify.com/reference/web-api/open-api-schema.yaml); Context7 (`/websites/developer_spotify_web-api`) |
+| Mixcloud API | https://www.mixcloud.com/developers/ |
+| YouTube Data API | https://developers.google.com/youtube/v3/guides/implementation |
 
 ### UI (shadcn-svelte)
 

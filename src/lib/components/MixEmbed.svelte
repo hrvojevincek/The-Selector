@@ -1,14 +1,28 @@
 <script lang="ts">
-let { embedUrl, title }: { embedUrl: string; title: string } = $props();
+import type { MixPlatform } from "$lib/types/mix";
+
+let {
+	embedUrl,
+	title,
+	platform = "mixcloud",
+}: {
+	embedUrl: string;
+	title: string;
+	platform?: MixPlatform;
+} = $props();
+
+const height = $derived(platform === "youtube" ? 200 : 120);
+
+const playerLabel = $derived(platform === "youtube" ? "YouTube" : "Mixcloud");
 </script>
 
 <div class="w-full overflow-hidden rounded-lg bg-black">
 	<iframe
-		title={`Mixcloud player: ${title}`}
+		title="{playerLabel} player: {title}"
 		width="100%"
-		height="120"
+		{height}
 		src={embedUrl}
 		frameborder="0"
-		allow="encrypted-media"
+		allow="encrypted-media; autoplay; clipboard-write"
 	></iframe>
 </div>

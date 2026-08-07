@@ -89,7 +89,7 @@ async function findMixes() {
 	<div class="mb-8">
 		<h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
 		<p class="mt-1 text-muted-foreground">
-			Select artists and find DJ mixes on Mixcloud.
+			Select artists and find DJ mixes on Mixcloud and YouTube.
 		</p>
 	</div>
 
@@ -157,7 +157,7 @@ async function findMixes() {
 					<LoadingProgress
 						current={progressCurrent}
 						total={progressTotal}
-						message="Searching Mixcloud for DJ mixes..."
+						message="Searching Mixcloud and YouTube..."
 					/>
 				</div>
 			{/if}

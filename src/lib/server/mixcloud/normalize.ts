@@ -1,4 +1,5 @@
-import type { MixcloudCloudcast, MixSearchResult } from "$lib/types/mixcloud";
+import type { MixSearchResult } from "$lib/types/mix";
+import type { MixcloudCloudcast } from "$lib/types/mixcloud";
 
 export function dedupeMixes(mixes: MixSearchResult[]): MixSearchResult[] {
 	const seen = new Map<string, MixSearchResult>();

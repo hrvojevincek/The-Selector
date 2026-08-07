@@ -1,5 +1,5 @@
 import type { FindMixesOutput } from "$lib/types/jobs";
-import type { MixSearchResult } from "$lib/types/mixcloud";
+import type { MixSearchResult } from "$lib/types/mix";
 import type { ArtistSummary } from "$lib/types/spotify";
 
 type SearchMeta = FindMixesOutput["meta"];

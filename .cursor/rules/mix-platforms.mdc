@@ -1,0 +1,47 @@
+---
+description: Mixcloud and YouTube mix search patterns; use official docs when unsure
+globs: src/lib/server/mixcloud/**, src/lib/server/youtube/**, src/lib/server/mixes/**, src/lib/server/jobs/find-mixes.ts, src/lib/types/mix.ts, src/lib/types/mixcloud.ts, src/routes/api/find-mixes/**
+alwaysApply: false
+---
+
+# Mix platform API conventions (this repo)
+
+## Documentation sources (prefer in order)
+
+| Platform | Primary guide |
+| --- | --- |
+| **Mixcloud** | https://www.mixcloud.com/developers/ |
+| **YouTube Data API v3** | https://developers.google.com/youtube/v3/guides/implementation |
+
+SoundCloud is **not integrated** (API requires Artist Pro). Reference: https://developers.soundcloud.com/docs/api
+
+Do not guess endpoint paths or JSON field names — use the official docs above.
+
+## Project-specific rules
+
+- **Server-only**: API keys and platform clients stay in `src/lib/server/**` or `+server.ts`. Never expose secrets to the browser.
+- **No raw audio streams**: use embed widgets/players only (Mixcloud explicitly disallows streaming outside embeds).
+- **Unified result type**: `MixSearchResult` in `src/lib/types/mix.ts` with `platform: "mixcloud" | "youtube"` (legacy `"soundcloud"` may appear in old cache entries).
+- **Ranking**: shared logic in `src/lib/server/mixes/rank.ts` — title relevance + play count; dedupe by `key`.
+- **Caching**: 24h per normalized artist name in `findMixesJob()` — key prefix `mixes:artist:`.
+- **Graceful degradation**: YouTube returns `[]` when `YOUTUBE_API_KEY` is unset; Mixcloud always runs (public read API).
+- **DJ mix filter**: YouTube uses `videoDuration=long` (> 20 min).
+- **Rate limits**: respect platform limits; Mixcloud returns `Retry-After` on 403 — do not tight-loop retries.
+
+## Modules
+
+| Module | Role |
+| --- | --- |
+| `src/lib/server/jobs/find-mixes.ts` | Orchestrates parallel search, merge, rank, cache |
+| `src/lib/server/mixcloud/client.ts` | Cloudcast + user search, embed URLs |
+| `src/lib/server/youtube/client.ts` | Search + video details (duration, views) |
+| `src/lib/server/mixes/rank.ts` | Shared normalize, score, rank |
+| `src/routes/api/find-mixes/+server.ts` | POST endpoint, auth + rate limit |
+
+## Env vars
+
+| Variable | Required | Platform |
+| --- | --- | --- |
+| `YOUTUBE_API_KEY` | No | YouTube — skipped when unset |
+
+Mixcloud search requires no API key for read-only `/search/` requests.

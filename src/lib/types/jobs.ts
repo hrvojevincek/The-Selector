@@ -1,7 +1,7 @@
-import type { MixSearchResult } from "./mixcloud";
+import type { MixSearchResult } from "./mix";
 
 export type FindMixesInput = {
-	/** Spotify artist IDs and display names to search on Mixcloud. */
+	/** Spotify artist IDs and display names to search across mix platforms. */
 	artists: { spotifyId: string; name: string }[];
 	options?: { maxResultsPerArtist?: number };
 };
