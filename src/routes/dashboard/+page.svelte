@@ -2,6 +2,7 @@
 import { goto } from "$app/navigation";
 import { postFindMixes } from "$lib/api/find-mixes";
 import ArtistGrid from "$lib/components/ArtistGrid.svelte";
+import ArtistPagination from "$lib/components/ArtistPagination.svelte";
 import LoadingProgress from "$lib/components/LoadingProgress.svelte";
 import PlaylistList from "$lib/components/PlaylistList.svelte";
 import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
@@ -16,29 +17,38 @@ import { Checkbox } from "$lib/components/ui/checkbox/index.js";
 import { Label } from "$lib/components/ui/label/index.js";
 import { Separator } from "$lib/components/ui/separator/index.js";
 import { searchStore } from "$lib/stores/search.svelte";
+import type { ArtistSummary } from "$lib/types/spotify";
 import type { PageProps } from "./$types";
 
 let { data }: PageProps = $props();
 
-let selectedIds = $state<Set<string>>(new Set());
+let selectedArtists = $state<Map<string, ArtistSummary>>(new Map());
+const selectedIds = $derived(new Set(selectedArtists.keys()));
 let loading = $state(false);
 let errorMessage = $state<string | null>(null);
 let progressCurrent = $state(0);
 let progressTotal = $state(0);
 
 function toggleArtist(id: string) {
-	const next = new Set(selectedIds);
+	const artist = data.artists.find((a) => a.id === id);
+	if (!artist) return;
+
+	const next = new Map(selectedArtists);
 	if (next.has(id)) next.delete(id);
-	else next.add(id);
-	selectedIds = next;
+	else next.set(id, artist);
+	selectedArtists = next;
 }
 
 function selectAll() {
-	selectedIds = new Set(data.artists.map((a) => a.id));
+	const next = new Map(selectedArtists);
+	for (const artist of data.artists) {
+		next.set(artist.id, artist);
+	}
+	selectedArtists = next;
 }
 
 function clearSelection() {
-	selectedIds = new Set();
+	selectedArtists = new Map();
 }
 
 function togglePlaylistScan() {
@@ -46,14 +56,22 @@ function togglePlaylistScan() {
 	goto(`/dashboard?scanPlaylists=${next}`, { invalidateAll: true });
 }
 
+function buildPageUrl(page: number) {
+	const params = new URLSearchParams();
+	if (data.scanPlaylists) params.set("scanPlaylists", "1");
+	if (page > 1) params.set("page", String(page));
+	const query = params.toString();
+	return query ? `/dashboard?${query}` : "/dashboard";
+}
+
 async function findMixes() {
-	const selectedArtists = data.artists.filter((a) => selectedIds.has(a.id));
-	if (!selectedArtists.length) {
+	const artists = [...selectedArtists.values()];
+	if (!artists.length) {
 		errorMessage = "Select at least one artist.";
 		return;
 	}
 
-	if (selectedArtists.length > 20) {
+	if (artists.length > 20) {
 		errorMessage = "Select at most 20 artists per search.";
 		return;
 	}
@@ -61,17 +79,17 @@ async function findMixes() {
 	loading = true;
 	errorMessage = null;
 	progressCurrent = 0;
-	progressTotal = selectedArtists.length;
+	progressTotal = artists.length;
 
 	try {
 		const output = await postFindMixes(
-			selectedArtists.map((a) => ({ spotifyId: a.id, name: a.name })),
+			artists.map((a) => ({ spotifyId: a.id, name: a.name })),
 		);
 
 		progressCurrent = progressTotal;
 
 		searchStore.setSearch({
-			artists: selectedArtists,
+			artists,
 			results: output.results,
 			meta: output.meta,
 		});
@@ -127,8 +145,11 @@ async function findMixes() {
 				<div>
 					<h2 class="text-lg font-medium">Artists</h2>
 					<p class="text-sm text-muted-foreground">
-						{data.artists.length}
-						unique · {selectedIds.size} selected
+						{data.allArtistCount}
+						unique · {selectedArtists.size} selected
+						{#if data.pagination.totalPages > 1}
+							· page {data.pagination.page} of {data.pagination.totalPages}
+						{/if}
 					</p>
 				</div>
 
@@ -173,6 +194,8 @@ async function findMixes() {
 				{selectedIds}
 				onToggle={toggleArtist}
 			/>
+
+			<ArtistPagination pagination={data.pagination} {buildPageUrl} />
 		</section>
 	</div>
 
@@ -184,7 +207,7 @@ async function findMixes() {
 				class="w-full rounded-full sm:w-auto"
 				size="lg"
 				onclick={findMixes}
-				disabled={loading || selectedIds.size === 0}
+				disabled={loading || selectedArtists.size === 0}
 			>
 				{loading ? 'Searching...' : 'Find DJ Mixes'}
 			</Button>

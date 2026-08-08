@@ -27,6 +27,25 @@ export async function ensureFreshSession(
 	return refreshed;
 }
 
+const SPOTIFY_API_ORIGIN = "https://api.spotify.com";
+
+/** Validate a Spotify pagination cursor and return a path for spotifyFetch. */
+export function normalizeSpotifyNextUrl(next: string | null): string | null {
+	if (!next) return null;
+
+	let url: URL;
+	try {
+		url = new URL(next);
+	} catch {
+		return null;
+	}
+
+	if (url.origin !== SPOTIFY_API_ORIGIN) return null;
+
+	const path = url.pathname.replace(/^\/v1(?=\/|$)/, "") || "/";
+	return `${path}${url.search}`;
+}
+
 /** Pause between Spotify requests when retrying after rate limits. */
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
