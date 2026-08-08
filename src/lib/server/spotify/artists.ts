@@ -4,7 +4,7 @@ import type {
 	Session,
 	SpotifyArtist,
 } from "$lib/types/spotify";
-import { spotifyFetch } from "./client";
+import { normalizeSpotifyNextUrl, spotifyFetch } from "./client";
 
 type TopArtistsResponse = {
 	items: SpotifyArtist[];
@@ -80,7 +80,7 @@ export async function getFollowedArtists(
 	while (path) {
 		const response: FollowedArtistsResponse = await spotifyFetch(session, path);
 		artists.push(...response.artists.items);
-		path = response.artists.next;
+		path = normalizeSpotifyNextUrl(response.artists.next);
 	}
 
 	return artists;
@@ -136,7 +136,7 @@ export async function getPlaylistArtists(
 				}
 			}
 
-			path = response.next;
+			path = normalizeSpotifyNextUrl(response.next);
 		}
 	}
 

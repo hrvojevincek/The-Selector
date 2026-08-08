@@ -42,7 +42,6 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 
 		return {
 			playlist,
-			allArtists,
 			artists,
 			allArtistCount: allArtists.length,
 			pagination,

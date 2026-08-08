@@ -24,7 +24,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			spotifyUserId: locals.session.spotifyUserId,
 		},
 		playlists,
-		allArtists,
 		artists,
 		allArtistCount: allArtists.length,
 		pagination,

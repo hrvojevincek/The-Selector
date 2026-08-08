@@ -13,11 +13,13 @@ import LoadingProgress from "$lib/components/LoadingProgress.svelte";
 import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
 import { Button } from "$lib/components/ui/button/index.js";
 import { searchStore } from "$lib/stores/search.svelte";
+import type { ArtistSummary } from "$lib/types/spotify";
 import type { PageProps } from "./$types";
 
 let { data }: PageProps = $props();
 
-let selectedIds = $state<Set<string>>(new Set());
+let selectedArtists = $state<Map<string, ArtistSummary>>(new Map());
+const selectedIds = $derived(new Set(selectedArtists.keys()));
 let artistView = $state<ArtistViewMode>("grid");
 let loading = $state(false);
 let errorMessage = $state<string | null>(null);
@@ -26,18 +28,26 @@ let progressTotal = $state(0);
 
 function toggleArtist(id: string) {
 	if (loading) return;
-	const next = new Set(selectedIds);
+
+	const artist = data.artists.find((a) => a.id === id);
+	if (!artist) return;
+
+	const next = new Map(selectedArtists);
 	if (next.has(id)) next.delete(id);
-	else next.add(id);
-	selectedIds = next;
+	else next.set(id, artist);
+	selectedArtists = next;
 }
 
 function selectAll() {
-	selectedIds = new Set(data.artists.map((a) => a.id));
+	const next = new Map(selectedArtists);
+	for (const artist of data.artists) {
+		next.set(artist.id, artist);
+	}
+	selectedArtists = next;
 }
 
 function clearSelection() {
-	selectedIds = new Set();
+	selectedArtists = new Map();
 }
 
 function buildPageUrl(page: number) {
@@ -47,13 +57,13 @@ function buildPageUrl(page: number) {
 }
 
 async function findMixes() {
-	const selectedArtists = data.allArtists.filter((a) => selectedIds.has(a.id));
-	if (!selectedArtists.length) {
+	const artists = [...selectedArtists.values()];
+	if (!artists.length) {
 		errorMessage = "Select at least one artist.";
 		return;
 	}
 
-	if (selectedArtists.length > 20) {
+	if (artists.length > 20) {
 		errorMessage = "Select at most 20 artists per search.";
 		return;
 	}
@@ -61,17 +71,17 @@ async function findMixes() {
 	loading = true;
 	errorMessage = null;
 	progressCurrent = 0;
-	progressTotal = selectedArtists.length;
+	progressTotal = artists.length;
 
 	try {
 		const output = await postFindMixes(
-			selectedArtists.map((a) => ({ spotifyId: a.id, name: a.name })),
+			artists.map((a) => ({ spotifyId: a.id, name: a.name })),
 		);
 
 		progressCurrent = progressTotal;
 
 		searchStore.setSearch({
-			artists: selectedArtists,
+			artists,
 			results: output.results,
 			meta: output.meta,
 		});
@@ -125,7 +135,7 @@ async function findMixes() {
 			<div>
 				<h2 class="text-lg font-medium">Artists in this playlist</h2>
 				<p class="text-sm text-muted-foreground">
-					{selectedIds.size}
+					{selectedArtists.size}
 					selected
 					{#if data.pagination.totalPages > 1}
 						· page {data.pagination.page} of {data.pagination.totalPages}
@@ -220,7 +230,7 @@ async function findMixes() {
 				class="w-full rounded-full sm:w-auto"
 				size="lg"
 				onclick={findMixes}
-				disabled={loading || selectedIds.size === 0}
+				disabled={loading || selectedArtists.size === 0}
 			>
 				{loading ? "Searching..." : "Find DJ Mixes"}
 			</Button>
