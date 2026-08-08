@@ -8,6 +8,7 @@ import { postFindMixes } from "$lib/api/find-mixes";
 import ArtistGrid, {
 	type ArtistViewMode,
 } from "$lib/components/ArtistGrid.svelte";
+import ArtistPagination from "$lib/components/ArtistPagination.svelte";
 import LoadingProgress from "$lib/components/LoadingProgress.svelte";
 import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
 import { Button } from "$lib/components/ui/button/index.js";
@@ -39,8 +40,14 @@ function clearSelection() {
 	selectedIds = new Set();
 }
 
+function buildPageUrl(page: number) {
+	return page > 1
+		? `/playlist/${data.playlist.id}?page=${page}`
+		: `/playlist/${data.playlist.id}`;
+}
+
 async function findMixes() {
-	const selectedArtists = data.artists.filter((a) => selectedIds.has(a.id));
+	const selectedArtists = data.allArtists.filter((a) => selectedIds.has(a.id));
 	if (!selectedArtists.length) {
 		errorMessage = "Select at least one artist.";
 		return;
@@ -108,7 +115,7 @@ async function findMixes() {
 			</h1>
 			<p class="mt-1 text-muted-foreground">
 				{data.playlist.trackCount}
-				tracks · {data.artists.length} unique artists
+				tracks · {data.allArtistCount} unique artists
 			</p>
 		</div>
 	</div>
@@ -117,7 +124,13 @@ async function findMixes() {
 		<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
 			<div>
 				<h2 class="text-lg font-medium">Artists in this playlist</h2>
-				<p class="text-sm text-muted-foreground">{selectedIds.size} selected</p>
+				<p class="text-sm text-muted-foreground">
+					{selectedIds.size}
+					selected
+					{#if data.pagination.totalPages > 1}
+						· page {data.pagination.page} of {data.pagination.totalPages}
+					{/if}
+				</p>
 			</div>
 
 			<div class="flex flex-wrap items-center gap-2">
@@ -152,7 +165,7 @@ async function findMixes() {
 					variant="outline"
 					size="sm"
 					onclick={selectAll}
-					disabled={loading || data.artists.length === 0}
+					disabled={loading || data.allArtistCount === 0}
 				>
 					Select all
 				</Button>
@@ -183,9 +196,9 @@ async function findMixes() {
 			</Alert>
 		{/if}
 
-		{#if data.artists.length === 0}
+		{#if data.allArtistCount === 0}
 			<p class="text-sm text-muted-foreground">
-				No artists found in the first 100 tracks of this playlist.
+				No artists found in this playlist.
 			</p>
 		{:else}
 			<ArtistGrid
@@ -194,6 +207,8 @@ async function findMixes() {
 				onToggle={toggleArtist}
 				view={artistView}
 			/>
+
+			<ArtistPagination pagination={data.pagination} {buildPageUrl} />
 		{/if}
 	</section>
 

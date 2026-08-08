@@ -73,13 +73,17 @@ export async function getTopArtists(
 
 export async function getFollowedArtists(
 	session: Session,
-	limit = 50,
 ): Promise<SpotifyArtist[]> {
-	const response = await spotifyFetch<FollowedArtistsResponse>(
-		session,
-		`/me/following?type=artist&limit=${limit}`,
-	);
-	return response.artists.items;
+	const artists: SpotifyArtist[] = [];
+	let path: string | null = "/me/following?type=artist&limit=50";
+
+	while (path) {
+		const response: FollowedArtistsResponse = await spotifyFetch(session, path);
+		artists.push(...response.artists.items);
+		path = response.artists.next;
+	}
+
+	return artists;
 }
 
 /** Image URLs keyed by artist id — from endpoints that return full artist objects. */
@@ -99,7 +103,7 @@ export async function getPlaylistArtists(
 	session: Session,
 	playlistIds: string[],
 	maxPlaylists = 5,
-	maxTracksPerPlaylist = 100,
+	maxTracksPerPlaylist?: number,
 ): Promise<SpotifyArtist[]> {
 	const artistsById = new Map<string, string>();
 	const playlists = playlistIds.slice(0, maxPlaylists);
@@ -109,7 +113,10 @@ export async function getPlaylistArtists(
 			`/playlists/${playlistId}/items?limit=50&fields=items(item(artists(id,name))),next`;
 		let trackCount = 0;
 
-		while (path && trackCount < maxTracksPerPlaylist) {
+		while (
+			path &&
+			(maxTracksPerPlaylist === undefined || trackCount < maxTracksPerPlaylist)
+		) {
 			const response: PlaylistItemsResponse = await spotifyFetch(session, path);
 
 			for (const item of response.items) {
@@ -121,7 +128,12 @@ export async function getPlaylistArtists(
 					}
 				}
 				trackCount++;
-				if (trackCount >= maxTracksPerPlaylist) break;
+				if (
+					maxTracksPerPlaylist !== undefined &&
+					trackCount >= maxTracksPerPlaylist
+				) {
+					break;
+				}
 			}
 
 			path = response.next;
@@ -155,6 +167,8 @@ export async function collectArtists(
 		const playlistArtists = await getPlaylistArtists(
 			session,
 			options.playlistIds,
+			5,
+			100,
 		);
 		for (const artist of playlistArtists) mergeArtist(map, artist, "playlist");
 	}

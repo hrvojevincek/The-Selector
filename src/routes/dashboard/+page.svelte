@@ -2,6 +2,7 @@
 import { goto } from "$app/navigation";
 import { postFindMixes } from "$lib/api/find-mixes";
 import ArtistGrid from "$lib/components/ArtistGrid.svelte";
+import ArtistPagination from "$lib/components/ArtistPagination.svelte";
 import LoadingProgress from "$lib/components/LoadingProgress.svelte";
 import PlaylistList from "$lib/components/PlaylistList.svelte";
 import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
@@ -46,8 +47,16 @@ function togglePlaylistScan() {
 	goto(`/dashboard?scanPlaylists=${next}`, { invalidateAll: true });
 }
 
+function buildPageUrl(page: number) {
+	const params = new URLSearchParams();
+	if (data.scanPlaylists) params.set("scanPlaylists", "1");
+	if (page > 1) params.set("page", String(page));
+	const query = params.toString();
+	return query ? `/dashboard?${query}` : "/dashboard";
+}
+
 async function findMixes() {
-	const selectedArtists = data.artists.filter((a) => selectedIds.has(a.id));
+	const selectedArtists = data.allArtists.filter((a) => selectedIds.has(a.id));
 	if (!selectedArtists.length) {
 		errorMessage = "Select at least one artist.";
 		return;
@@ -127,8 +136,11 @@ async function findMixes() {
 				<div>
 					<h2 class="text-lg font-medium">Artists</h2>
 					<p class="text-sm text-muted-foreground">
-						{data.artists.length}
+						{data.allArtistCount}
 						unique · {selectedIds.size} selected
+						{#if data.pagination.totalPages > 1}
+							· page {data.pagination.page} of {data.pagination.totalPages}
+						{/if}
 					</p>
 				</div>
 
@@ -173,6 +185,8 @@ async function findMixes() {
 				{selectedIds}
 				onToggle={toggleArtist}
 			/>
+
+			<ArtistPagination pagination={data.pagination} {buildPageUrl} />
 		</section>
 	</div>
 
