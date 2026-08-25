@@ -106,6 +106,135 @@ export function buildArtistImageLookup(
 	return lookup;
 }
 
+type ArtistSearchResponse = {
+	artists: {
+		items: SpotifyArtist[];
+	};
+};
+
+type ArtistAlbumsResponse = {
+	items: { id: string }[];
+};
+
+type AlbumTracksResponse = {
+	items: {
+		artists?: SpotifyArtist[];
+	}[];
+};
+
+/** Max artists to return for the similar list. */
+const SIMILAR_ARTISTS_LIMIT = 30;
+/** Search `limit` max after Feb 2026 Spotify API changes. */
+const SEARCH_LIMIT = 10;
+
+function escapeSearchTerm(value: string): string {
+	return value.replace(/"/g, "");
+}
+
+/**
+ * Artists similar to the given artist.
+ *
+ * `GET /artists/{id}/related-artists` returns 403 for apps created after
+ * Nov 2024, so we approximate similarity via genre search, then fill gaps
+ * with album collaborators.
+ */
+export async function getRelatedArtists(
+	session: Session,
+	artistId: string,
+): Promise<SpotifyArtist[]> {
+	if (!isValidSpotifyId(artistId)) return [];
+
+	const seed = await spotifyFetch<SpotifyArtist>(
+		session,
+		`/artists/${artistId}`,
+	);
+
+	const byId = new Map<string, SpotifyArtist>();
+
+	const genres = (seed.genres ?? [])
+		.map((g) => g.trim())
+		.filter(Boolean)
+		.slice(0, 3);
+
+	await Promise.all(
+		genres.map(async (genre) => {
+			const q = encodeURIComponent(`genre:"${escapeSearchTerm(genre)}"`);
+			try {
+				const response = await spotifyFetch<ArtistSearchResponse>(
+					session,
+					`/search?q=${q}&type=artist&limit=${SEARCH_LIMIT}`,
+				);
+				for (const artist of response.artists.items) {
+					if (
+						isValidSpotifyId(artist.id) &&
+						artist.id !== artistId &&
+						!byId.has(artist.id)
+					) {
+						byId.set(artist.id, artist);
+					}
+				}
+			} catch {
+				// Genre search can fail for obscure labels — keep going.
+			}
+		}),
+	);
+
+	if (byId.size < SIMILAR_ARTISTS_LIMIT) {
+		const collaborators = await getAlbumCollaborators(session, artistId);
+		for (const artist of collaborators) {
+			if (artist.id === artistId || byId.has(artist.id)) continue;
+			byId.set(artist.id, artist);
+			if (byId.size >= SIMILAR_ARTISTS_LIMIT) break;
+		}
+	}
+
+	return [...byId.values()].slice(0, SIMILAR_ARTISTS_LIMIT);
+}
+
+/** Other artists credited on the seed artist's recent albums/singles. */
+async function getAlbumCollaborators(
+	session: Session,
+	artistId: string,
+): Promise<SpotifyArtist[]> {
+	const albums = await spotifyFetch<ArtistAlbumsResponse>(
+		session,
+		`/artists/${artistId}/albums?include_groups=album,single&limit=10`,
+	);
+
+	const albumIds = albums.items
+		.map((a) => a.id)
+		.filter(isValidSpotifyId)
+		.slice(0, 5);
+	const collaboratorIds = new Set<string>();
+
+	await Promise.all(
+		albumIds.map(async (albumId) => {
+			try {
+				const tracks = await spotifyFetch<AlbumTracksResponse>(
+					session,
+					`/albums/${albumId}/tracks?limit=50`,
+				);
+				for (const track of tracks.items) {
+					for (const artist of track.artists ?? []) {
+						if (isValidSpotifyId(artist.id) && artist.id !== artistId) {
+							collaboratorIds.add(artist.id);
+						}
+					}
+				}
+			} catch {
+				// Skip albums that fail (403/404) and continue.
+			}
+		}),
+	);
+
+	if (collaboratorIds.size === 0) return [];
+
+	return getArtistsByIds(
+		session,
+		[...collaboratorIds].slice(0, SIMILAR_ARTISTS_LIMIT),
+	);
+}
+
 /**
  * Fetch full artist objects (incl. images) by id.
  * Uses GET /artists/{id} — Get Several Artists (`GET /artists?ids=`) was removed
