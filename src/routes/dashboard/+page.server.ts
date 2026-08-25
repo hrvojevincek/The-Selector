@@ -9,13 +9,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		throw redirect(302, "/");
 	}
 
-	const scanPlaylists = url.searchParams.get("scanPlaylists") === "1";
 	const page = parsePageParam(url.searchParams.get("page"));
 	const playlists = await getUserPlaylists(locals.session);
-	const allArtists = await collectArtists(locals.session, {
-		scanPlaylists,
-		playlistIds: scanPlaylists ? playlists.map((p) => p.id) : [],
-	});
+	const allArtists = await collectArtists(locals.session);
 	const { items: artists, meta: pagination } = paginate(allArtists, page);
 
 	return {
@@ -27,6 +23,5 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		artists,
 		allArtistCount: allArtists.length,
 		pagination,
-		scanPlaylists,
 	};
 };
