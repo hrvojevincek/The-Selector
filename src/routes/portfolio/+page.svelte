@@ -2,6 +2,7 @@
 import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
 import Music2Icon from "@lucide/svelte/icons/music-2";
 import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
+import UsersIcon from "@lucide/svelte/icons/users";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { postFindMixes } from "$lib/api/find-mixes";
@@ -106,15 +107,25 @@ const totalMixes = $derived(
 						</div>
 					</div>
 
-					<Button
-						variant="outline"
-						size="sm"
-						onclick={() => reSearchArtist(artist)}
-						disabled={loadingArtistId === artist.id}
-					>
-						<RefreshCwIcon class="size-4" />
-						{loadingArtistId === artist.id ? 'Searching...' : 'Re-search'}
-					</Button>
+					<div class="flex flex-wrap items-center gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							href={`/artist/${artist.id}/similar`}
+						>
+							<UsersIcon class="size-4" />
+							Similar artists
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => reSearchArtist(artist)}
+							disabled={loadingArtistId === artist.id}
+						>
+							<RefreshCwIcon class="size-4" />
+							{loadingArtistId === artist.id ? 'Searching...' : 'Re-search'}
+						</Button>
+					</div>
 				</div>
 
 				{#if loadingArtistId === artist.id}

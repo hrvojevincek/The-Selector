@@ -12,8 +12,8 @@ export type Session = {
 	expiresAt: number;
 };
 
-/** Where the artist was discovered in the user's Spotify library. */
-export type ArtistSource = "top" | "followed" | "playlist";
+/** Where the artist was discovered. */
+export type ArtistSource = "top" | "followed" | "playlist" | "related";
 
 export type ArtistSummary = {
 	id: string;
@@ -33,6 +33,8 @@ export type SpotifyArtist = {
 	id: string;
 	name: string;
 	images?: { url: string; height: number; width: number }[];
+	/** Deprecated by Spotify; often empty for newer apps — still useful when present. */
+	genres?: string[];
 };
 
 export type SpotifyPlaylistRef = {
