@@ -3,13 +3,16 @@ import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
 import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 import { Button } from "$lib/components/ui/button/index.js";
 import type { PaginationMeta } from "$lib/pagination";
+import { cn } from "$lib/utils.js";
 
 let {
 	pagination,
 	buildPageUrl,
+	variant = "default",
 }: {
 	pagination: PaginationMeta;
 	buildPageUrl: (page: number) => string;
+	variant?: "default" | "inline";
 } = $props();
 
 const { page, totalPages, total, pageSize } = $derived(pagination);
@@ -20,13 +23,19 @@ const showPagination = $derived(totalPages > 1);
 
 {#if showPagination}
 	<nav
-		class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t pt-4"
+		class={cn(
+			'flex flex-wrap items-center gap-3',
+			variant === 'default' && 'mt-6 justify-between border-t pt-4',
+			variant === 'inline' && 'justify-end'
+		)}
 		aria-label="Artist pagination"
 	>
-		<p class="text-sm text-muted-foreground">
-			Showing {rangeStart}–{rangeEnd}
-			of {total}
-		</p>
+		{#if variant === "default"}
+			<p class="text-sm text-muted-foreground">
+				Showing {rangeStart}–{rangeEnd}
+				of {total}
+			</p>
+		{/if}
 
 		<div class="flex items-center gap-2">
 			<Button
@@ -37,11 +46,14 @@ const showPagination = $derived(totalPages > 1);
 				aria-label="Previous page"
 			>
 				<ChevronLeftIcon class="size-4" />
-				Previous
+				{#if variant === "default"}
+					Previous
+				{/if}
 			</Button>
 
-			<span class="min-w-24 text-center text-sm text-muted-foreground">
-				Page {page} of {totalPages}
+			<span class="min-w-16 text-center text-sm text-muted-foreground">
+				{page}
+				/ {totalPages}
 			</span>
 
 			<Button
@@ -51,7 +63,9 @@ const showPagination = $derived(totalPages > 1);
 				disabled={page >= totalPages}
 				aria-label="Next page"
 			>
-				Next
+				{#if variant === "default"}
+					Next
+				{/if}
 				<ChevronRightIcon class="size-4" />
 			</Button>
 		</div>

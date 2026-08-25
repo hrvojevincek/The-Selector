@@ -10,12 +10,14 @@ let {
 	artist,
 	selected = false,
 	loading = false,
+	showSources = true,
 	onToggle,
 	onClick,
 }: {
 	artist: ArtistSummary;
 	selected?: boolean;
 	loading?: boolean;
+	showSources?: boolean;
 	onToggle?: (id: string) => void;
 	onClick?: (artist: ArtistSummary) => void;
 } = $props();
@@ -55,13 +57,15 @@ const selectable = $derived(Boolean(onToggle));
 
 	<div class="min-w-0 flex-1">
 		<p class="truncate font-medium">{artist.name}</p>
-		<div class="mt-1 flex flex-wrap gap-1">
-			{#each artist.sources as source (source)}
-				<Badge variant="secondary" class="text-[10px] capitalize"
-					>{source}</Badge
-				>
-			{/each}
-		</div>
+		{#if showSources && artist.sources.length}
+			<div class="mt-1 flex flex-wrap gap-1">
+				{#each artist.sources as source (source)}
+					<Badge variant="secondary" class="text-[10px] capitalize"
+						>{source}</Badge
+					>
+				{/each}
+			</div>
+		{/if}
 	</div>
 
 	{#if loading}

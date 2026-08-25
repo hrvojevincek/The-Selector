@@ -21,6 +21,9 @@ type PlaylistItemsResponse = {
 	items: {
 		item: {
 			artists?: SpotifyArtist[];
+			album?: {
+				images?: { url: string; height: number; width: number }[];
+			};
 		} | null;
 	}[];
 	next: string | null;
@@ -92,11 +95,51 @@ export function buildArtistImageLookup(
 ): Map<string, string | null> {
 	const lookup = new Map<string, string | null>();
 	for (const artist of artists) {
-		if (!lookup.has(artist.id)) {
-			lookup.set(artist.id, artistImage(artist));
+		const image = artistImage(artist);
+		const existing = lookup.get(artist.id);
+		if (existing === undefined) {
+			lookup.set(artist.id, image);
+		} else if (!existing && image) {
+			lookup.set(artist.id, image);
 		}
 	}
 	return lookup;
+}
+
+/**
+ * Fetch full artist objects (incl. images) by id.
+ * Uses GET /artists/{id} — Get Several Artists (`GET /artists?ids=`) was removed
+ * in Spotify's February 2026 Web API changes.
+ * @see https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide
+ */
+export async function getArtistsByIds(
+	session: Session,
+	ids: string[],
+	concurrency = 8,
+): Promise<SpotifyArtist[]> {
+	const uniqueIds = [...new Set(ids.filter(isValidSpotifyId))];
+	const artists: SpotifyArtist[] = [];
+
+	for (let i = 0; i < uniqueIds.length; i += concurrency) {
+		const batch = uniqueIds.slice(i, i + concurrency);
+		const results = await Promise.all(
+			batch.map(async (id) => {
+				try {
+					return await spotifyFetch<SpotifyArtist>(session, `/artists/${id}`);
+				} catch {
+					return null;
+				}
+			}),
+		);
+
+		for (const artist of results) {
+			if (artist && isValidSpotifyId(artist.id)) {
+				artists.push(artist);
+			}
+		}
+	}
+
+	return artists;
 }
 
 export async function getPlaylistArtists(
@@ -105,12 +148,16 @@ export async function getPlaylistArtists(
 	maxPlaylists = 5,
 	maxTracksPerPlaylist?: number,
 ): Promise<SpotifyArtist[]> {
-	const artistsById = new Map<string, string>();
+	/** Playlist track artists lack images; use album art as a display fallback. */
+	const artistsById = new Map<
+		string,
+		{ name: string; imageUrl: string | null }
+	>();
 	const playlists = playlistIds.slice(0, maxPlaylists);
 
 	for (const playlistId of playlists) {
 		let path: string | null =
-			`/playlists/${playlistId}/items?limit=50&fields=items(item(artists(id,name))),next`;
+			`/playlists/${playlistId}/items?limit=50&fields=items(item(artists(id,name),album(images))),next`;
 		let trackCount = 0;
 
 		while (
@@ -121,10 +168,17 @@ export async function getPlaylistArtists(
 
 			for (const item of response.items) {
 				if (!item.item?.artists) continue;
+				const albumImage = item.item.album?.images?.[0]?.url ?? null;
 				for (const artist of item.item.artists) {
 					if (!isValidSpotifyId(artist.id)) continue;
-					if (!artistsById.has(artist.id)) {
-						artistsById.set(artist.id, artist.name);
+					const existing = artistsById.get(artist.id);
+					if (!existing) {
+						artistsById.set(artist.id, {
+							name: artist.name,
+							imageUrl: albumImage,
+						});
+					} else if (!existing.imageUrl && albumImage) {
+						existing.imageUrl = albumImage;
 					}
 				}
 				trackCount++;
@@ -141,7 +195,11 @@ export async function getPlaylistArtists(
 	}
 
 	return [...artistsById.entries()]
-		.map(([id, name]) => ({ id, name }))
+		.map(([id, { name, imageUrl }]) => ({
+			id,
+			name,
+			images: imageUrl ? [{ url: imageUrl, height: 0, width: 0 }] : undefined,
+		}))
 		.sort((a, b) => a.name.localeCompare(b.name));
 }
 
