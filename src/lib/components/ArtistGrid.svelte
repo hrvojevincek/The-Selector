@@ -11,6 +11,7 @@ let {
 	onToggle,
 	onArtistClick,
 	loadingArtistId = null,
+	showSources = true,
 	view = "grid",
 }: {
 	artists: ArtistSummary[];
@@ -18,6 +19,7 @@ let {
 	onToggle?: (id: string) => void;
 	onArtistClick?: (artist: ArtistSummary) => void;
 	loadingArtistId?: string | null;
+	showSources?: boolean;
 	view?: ArtistViewMode;
 } = $props();
 </script>
@@ -29,6 +31,7 @@ let {
 				{artist}
 				selected={selectedIds.has(artist.id)}
 				loading={loadingArtistId === artist.id}
+				{showSources}
 				{onToggle}
 				onClick={onArtistClick}
 			/>
@@ -43,6 +46,7 @@ let {
 				{artist}
 				selected={selectedIds.has(artist.id)}
 				loading={loadingArtistId === artist.id}
+				{showSources}
 				{onToggle}
 				onClick={onArtistClick}
 			/>

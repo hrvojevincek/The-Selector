@@ -72,15 +72,20 @@ async function openArtistMixes(artist: ArtistSummary) {
 		</Card>
 
 		<section class="min-w-0">
-			<div class="mb-4">
-				<h2 class="text-lg font-medium">Artists</h2>
-				<p class="text-sm text-muted-foreground">
-					{data.allArtistCount}
-					unique
-					{#if data.pagination.totalPages > 1}
-						· page {data.pagination.page} of {data.pagination.totalPages}
-					{/if}
-				</p>
+			<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+				<div>
+					<h2 class="text-lg font-medium">Artists</h2>
+					<p class="text-sm text-muted-foreground">
+						{data.allArtistCount}
+						unique
+					</p>
+				</div>
+
+				<ArtistPagination
+					pagination={data.pagination}
+					{buildPageUrl}
+					variant="inline"
+				/>
 			</div>
 
 			{#if errorMessage}
@@ -93,9 +98,8 @@ async function openArtistMixes(artist: ArtistSummary) {
 				artists={data.artists}
 				onArtistClick={openArtistMixes}
 				{loadingArtistId}
+				showSources={false}
 			/>
-
-			<ArtistPagination pagination={data.pagination} {buildPageUrl} />
 		</section>
 	</div>
 </div>

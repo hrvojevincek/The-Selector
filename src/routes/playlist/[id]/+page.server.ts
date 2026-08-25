@@ -26,9 +26,12 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 				getFollowedArtists(session),
 			]);
 
+		// Prefer real artist images from top/followed; fall back to album art
+		// from playlist tracks (Get Several Artists was removed in Feb 2026).
 		const imageLookup = buildArtistImageLookup([
 			...topArtists,
 			...followedArtists,
+			...trackArtists,
 		]);
 
 		const allArtists: ArtistSummary[] = trackArtists.map((artist) => ({

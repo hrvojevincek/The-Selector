@@ -9,7 +9,10 @@ let { displayName }: { displayName?: string | null } = $props();
 	<div
 		class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6"
 	>
-		<a href="/" class="text-lg font-semibold tracking-tight">
+		<a
+			href={displayName ? "/dashboard" : "/"}
+			class="text-lg font-semibold tracking-tight"
+		>
 			<span class="text-primary">DJ</span>
 			Mix Portfolio
 		</a>
