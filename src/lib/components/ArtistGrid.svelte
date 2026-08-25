@@ -7,13 +7,17 @@ export type ArtistViewMode = "grid" | "list";
 
 let {
 	artists,
-	selectedIds,
+	selectedIds = new Set<string>(),
 	onToggle,
+	onArtistClick,
+	loadingArtistId = null,
 	view = "grid",
 }: {
 	artists: ArtistSummary[];
-	selectedIds: Set<string>;
-	onToggle: (id: string) => void;
+	selectedIds?: Set<string>;
+	onToggle?: (id: string) => void;
+	onArtistClick?: (artist: ArtistSummary) => void;
+	loadingArtistId?: string | null;
 	view?: ArtistViewMode;
 } = $props();
 </script>
@@ -24,7 +28,9 @@ let {
 			<ArtistListRow
 				{artist}
 				selected={selectedIds.has(artist.id)}
+				loading={loadingArtistId === artist.id}
 				{onToggle}
+				onClick={onArtistClick}
 			/>
 		{/each}
 	</div>
@@ -33,7 +39,13 @@ let {
 		class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
 	>
 		{#each artists as artist (artist.id)}
-			<ArtistCard {artist} selected={selectedIds.has(artist.id)} {onToggle} />
+			<ArtistCard
+				{artist}
+				selected={selectedIds.has(artist.id)}
+				loading={loadingArtistId === artist.id}
+				{onToggle}
+				onClick={onArtistClick}
+			/>
 		{/each}
 	</div>
 {/if}

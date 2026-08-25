@@ -1,5 +1,6 @@
 <script lang="ts">
 import CheckIcon from "@lucide/svelte/icons/check";
+import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
 import Music2Icon from "@lucide/svelte/icons/music-2";
 import { Badge } from "$lib/components/ui/badge/index.js";
 import { Card, CardContent } from "$lib/components/ui/card/index.js";
@@ -9,23 +10,34 @@ import { cn } from "$lib/utils.js";
 let {
 	artist,
 	selected = false,
+	loading = false,
 	onToggle,
+	onClick,
 }: {
 	artist: ArtistSummary;
 	selected?: boolean;
-	onToggle: (id: string) => void;
+	loading?: boolean;
+	onToggle?: (id: string) => void;
+	onClick?: (artist: ArtistSummary) => void;
 } = $props();
+
+const selectable = $derived(Boolean(onToggle));
 </script>
 
 <button
 	type="button"
-	class="group w-full text-left"
-	onclick={() => onToggle(artist.id)}
+	class="group w-full cursor-pointer text-left"
+	disabled={loading}
+	onclick={() => {
+		if (onClick) onClick(artist);
+		else onToggle?.(artist.id);
+	}}
 >
 	<Card
 		class={cn(
 			'overflow-hidden py-0 transition-colors hover:bg-accent/50',
-			selected && 'border-primary ring-1 ring-primary'
+			selected && 'border-primary ring-1 ring-primary',
+			loading && 'opacity-70'
 		)}
 	>
 		<div class="relative aspect-square overflow-hidden bg-muted">
@@ -43,16 +55,24 @@ let {
 				</div>
 			{/if}
 
-			<div
-				class={cn(
-					'absolute right-2 top-2 flex size-6 items-center justify-center rounded-full border bg-background/80',
-					selected
-						? 'border-primary bg-primary text-primary-foreground'
-						: 'border-border text-transparent group-hover:text-muted-foreground'
-				)}
-			>
-				<CheckIcon class="size-3.5" />
-			</div>
+			{#if loading}
+				<div
+					class="absolute inset-0 flex items-center justify-center bg-background/60"
+				>
+					<LoaderCircleIcon class="size-6 animate-spin text-primary" />
+				</div>
+			{:else if selectable}
+				<div
+					class={cn(
+						'absolute right-2 top-2 flex size-6 items-center justify-center rounded-full border bg-background/80',
+						selected
+							? 'border-primary bg-primary text-primary-foreground'
+							: 'border-border text-transparent group-hover:text-muted-foreground'
+					)}
+				>
+					<CheckIcon class="size-3.5" />
+				</div>
+			{/if}
 		</div>
 
 		<CardContent class="p-3">

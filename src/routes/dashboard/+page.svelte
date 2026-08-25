@@ -3,93 +3,43 @@ import { goto } from "$app/navigation";
 import { postFindMixes } from "$lib/api/find-mixes";
 import ArtistGrid from "$lib/components/ArtistGrid.svelte";
 import ArtistPagination from "$lib/components/ArtistPagination.svelte";
-import LoadingProgress from "$lib/components/LoadingProgress.svelte";
 import PlaylistList from "$lib/components/PlaylistList.svelte";
 import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
-import { Button } from "$lib/components/ui/button/index.js";
 import {
 	Card,
 	CardContent,
 	CardHeader,
 	CardTitle,
 } from "$lib/components/ui/card/index.js";
-import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-import { Label } from "$lib/components/ui/label/index.js";
-import { Separator } from "$lib/components/ui/separator/index.js";
 import { searchStore } from "$lib/stores/search.svelte";
 import type { ArtistSummary } from "$lib/types/spotify";
 import type { PageProps } from "./$types";
 
 let { data }: PageProps = $props();
 
-let selectedArtists = $state<Map<string, ArtistSummary>>(new Map());
-const selectedIds = $derived(new Set(selectedArtists.keys()));
-let loading = $state(false);
+let loadingArtistId = $state<string | null>(null);
 let errorMessage = $state<string | null>(null);
-let progressCurrent = $state(0);
-let progressTotal = $state(0);
-
-function toggleArtist(id: string) {
-	const artist = data.artists.find((a) => a.id === id);
-	if (!artist) return;
-
-	const next = new Map(selectedArtists);
-	if (next.has(id)) next.delete(id);
-	else next.set(id, artist);
-	selectedArtists = next;
-}
-
-function selectAll() {
-	const next = new Map(selectedArtists);
-	for (const artist of data.artists) {
-		next.set(artist.id, artist);
-	}
-	selectedArtists = next;
-}
-
-function clearSelection() {
-	selectedArtists = new Map();
-}
-
-function togglePlaylistScan() {
-	const next = data.scanPlaylists ? "0" : "1";
-	goto(`/dashboard?scanPlaylists=${next}`, { invalidateAll: true });
-}
 
 function buildPageUrl(page: number) {
 	const params = new URLSearchParams();
-	if (data.scanPlaylists) params.set("scanPlaylists", "1");
 	if (page > 1) params.set("page", String(page));
 	const query = params.toString();
 	return query ? `/dashboard?${query}` : "/dashboard";
 }
 
-async function findMixes() {
-	const artists = [...selectedArtists.values()];
-	if (!artists.length) {
-		errorMessage = "Select at least one artist.";
-		return;
-	}
+async function openArtistMixes(artist: ArtistSummary) {
+	if (loadingArtistId) return;
 
-	if (artists.length > 20) {
-		errorMessage = "Select at most 20 artists per search.";
-		return;
-	}
-
-	loading = true;
+	loadingArtistId = artist.id;
 	errorMessage = null;
-	progressCurrent = 0;
-	progressTotal = artists.length;
 
 	try {
-		const output = await postFindMixes(
-			artists.map((a) => ({ spotifyId: a.id, name: a.name })),
-		);
-
-		progressCurrent = progressTotal;
+		const output = await postFindMixes([
+			{ spotifyId: artist.id, name: artist.name },
+		]);
 
 		searchStore.setSearch({
-			artists,
+			artists: [artist],
 			results: output.results,
 			meta: output.meta,
 		});
@@ -98,7 +48,7 @@ async function findMixes() {
 	} catch (err) {
 		errorMessage = err instanceof Error ? err.message : "Something went wrong.";
 	} finally {
-		loading = false;
+		loadingArtistId = null;
 	}
 }
 </script>
@@ -107,7 +57,7 @@ async function findMixes() {
 	<div class="mb-8">
 		<h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
 		<p class="mt-1 text-muted-foreground">
-			Select artists and find DJ mixes on Mixcloud and YouTube.
+			Click an artist to find DJ mixes on Mixcloud and YouTube.
 		</p>
 	</div>
 
@@ -116,72 +66,22 @@ async function findMixes() {
 			<CardHeader>
 				<CardTitle class="text-base">Library</CardTitle>
 			</CardHeader>
-			<CardContent class="space-y-6">
+			<CardContent>
 				<PlaylistList playlists={data.playlists} />
-
-				<Separator />
-
-				<div class="flex items-start gap-3 rounded-lg border p-3">
-					<Checkbox
-						id="scan-playlists"
-						class="mt-0.5"
-						checked={data.scanPlaylists}
-						onCheckedChange={togglePlaylistScan}
-					/>
-					<div class="space-y-1 leading-none">
-						<Label for="scan-playlists" class="font-medium"
-							>Include artists from playlists</Label
-						>
-						<p class="text-xs text-muted-foreground">
-							Deep-scans up to 5 playlists (slower on first load).
-						</p>
-					</div>
-				</div>
 			</CardContent>
 		</Card>
 
 		<section class="min-w-0">
-			<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<h2 class="text-lg font-medium">Artists</h2>
-					<p class="text-sm text-muted-foreground">
-						{data.allArtistCount}
-						unique · {selectedArtists.size} selected
-						{#if data.pagination.totalPages > 1}
-							· page {data.pagination.page} of {data.pagination.totalPages}
-						{/if}
-					</p>
-				</div>
-
-				<div class="flex flex-wrap gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						onclick={selectAll}
-						disabled={loading}
-					>
-						Select all
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onclick={clearSelection}
-						disabled={loading}
-					>
-						Clear
-					</Button>
-				</div>
+			<div class="mb-4">
+				<h2 class="text-lg font-medium">Artists</h2>
+				<p class="text-sm text-muted-foreground">
+					{data.allArtistCount}
+					unique
+					{#if data.pagination.totalPages > 1}
+						· page {data.pagination.page} of {data.pagination.totalPages}
+					{/if}
+				</p>
 			</div>
-
-			{#if loading}
-				<div class="mb-4">
-					<LoadingProgress
-						current={progressCurrent}
-						total={progressTotal}
-						message="Searching Mixcloud and YouTube..."
-					/>
-				</div>
-			{/if}
 
 			{#if errorMessage}
 				<Alert variant="destructive" class="mb-4">
@@ -191,26 +91,11 @@ async function findMixes() {
 
 			<ArtistGrid
 				artists={data.artists}
-				{selectedIds}
-				onToggle={toggleArtist}
+				onArtistClick={openArtistMixes}
+				{loadingArtistId}
 			/>
 
 			<ArtistPagination pagination={data.pagination} {buildPageUrl} />
 		</section>
-	</div>
-
-	<div
-		class="fixed inset-x-0 bottom-0 border-t bg-background/95 p-4 backdrop-blur-md lg:static lg:mt-8 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
-	>
-		<div class="mx-auto flex max-w-7xl justify-end">
-			<Button
-				class="w-full rounded-full sm:w-auto"
-				size="lg"
-				onclick={findMixes}
-				disabled={loading || selectedArtists.size === 0}
-			>
-				{loading ? 'Searching...' : 'Find DJ Mixes'}
-			</Button>
-		</div>
 	</div>
 </div>

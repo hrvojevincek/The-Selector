@@ -1,5 +1,6 @@
 <script lang="ts">
 import CheckIcon from "@lucide/svelte/icons/check";
+import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
 import Music2Icon from "@lucide/svelte/icons/music-2";
 import { Badge } from "$lib/components/ui/badge/index.js";
 import type { ArtistSummary } from "$lib/types/spotify";
@@ -8,22 +9,33 @@ import { cn } from "$lib/utils.js";
 let {
 	artist,
 	selected = false,
+	loading = false,
 	onToggle,
+	onClick,
 }: {
 	artist: ArtistSummary;
 	selected?: boolean;
-	onToggle: (id: string) => void;
+	loading?: boolean;
+	onToggle?: (id: string) => void;
+	onClick?: (artist: ArtistSummary) => void;
 } = $props();
+
+const selectable = $derived(Boolean(onToggle));
 </script>
 
 <button
 	type="button"
-	aria-pressed={selected}
+	aria-pressed={selectable ? selected : undefined}
+	disabled={loading}
 	class={cn(
-		'group flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-accent/50',
-		selected && 'border-primary bg-accent/30 ring-1 ring-primary'
+		'group flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-accent/50',
+		selected && 'border-primary bg-accent/30 ring-1 ring-primary',
+		loading && 'opacity-70'
 	)}
-	onclick={() => onToggle(artist.id)}
+	onclick={() => {
+		if (onClick) onClick(artist);
+		else onToggle?.(artist.id);
+	}}
 >
 	<div class="size-10 shrink-0 overflow-hidden rounded-full bg-muted">
 		{#if artist.imageUrl}
@@ -52,14 +64,18 @@ let {
 		</div>
 	</div>
 
-	<div
-		class={cn(
-			'flex size-6 shrink-0 items-center justify-center rounded-full border',
-			selected
-				? 'border-primary bg-primary text-primary-foreground'
-				: 'border-border text-transparent group-hover:text-muted-foreground'
-		)}
-	>
-		<CheckIcon class="size-3.5" />
-	</div>
+	{#if loading}
+		<LoaderCircleIcon class="size-5 shrink-0 animate-spin text-primary" />
+	{:else if selectable}
+		<div
+			class={cn(
+				'flex size-6 shrink-0 items-center justify-center rounded-full border',
+				selected
+					? 'border-primary bg-primary text-primary-foreground'
+					: 'border-border text-transparent group-hover:text-muted-foreground'
+			)}
+		>
+			<CheckIcon class="size-3.5" />
+		</div>
+	{/if}
 </button>
